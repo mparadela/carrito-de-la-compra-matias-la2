@@ -5,7 +5,11 @@
 // ==========================================
 // VARIABLES GLOBALES
 // ==========================================
-
+const nombre = document.getElementById("nombre");
+const precio = document.getElementById("precio");
+const btnAgregar = document.getElementById("btnAgregar");
+const lista = document.getElementById("listaProductos");
+ 
 // Array que contendrá todos los productos del carrito
 let carrito = [];
 
@@ -24,6 +28,7 @@ function guardarCarrito() {
     // TO-DO: Implementar
     // 1. Convertir el array 'carrito' a JSON con JSON.stringify()
     // 2. Guardarlo en localStorage con la clave 'carrito'
+    localStorage.setItem("carrito", JSON.stringify(carrito));
 }
 
 /**
@@ -37,7 +42,21 @@ function cargarCarrito() {
     // 2. Si existe, parsearlo con JSON.parse() y devolverlo
     // 3. Si no existe, devolver array vacío []
     // 4. Usar try-catch para manejar errores de parseo
+
+    try {
+        const cargar = localStorage.getItem("carrito");
+
+        if(cargar) {
+            carrito = JSON.parse(cargar);
+            mostrarProductos();
+        }
+    }catch (error){
+        console.error("Error con caragar el carrito", error);
+        carrito = [];
+    }
 }
+
+
 
 
 // ==========================================
@@ -55,8 +74,8 @@ function generarId() {
 
 /**
  * Añade un nuevo producto al carrito
- * @param {string} nombre - Nombre del producto
- * @param {number} precio - Precio del producto
+ * param {string} nombre - Nombre del producto
+ * param {number} precio - Precio del producto
  */
 function agregarProducto(nombre, precio) {
     // TO-DO: Implementar
@@ -68,11 +87,31 @@ function agregarProducto(nombre, precio) {
     // 6. Llamar a guardarCarrito()
     // 7. Llamar a renderizarCarrito()
     // 8. Limpiar los inputs
+    if (nombre.trim() === ""){
+        alert ("El campo esta vacio");
+        return;
+    }
+    if (isNaN(precio) || parseFloat(precio) <= 0) {
+        alert("El precio debe ser un número mayor a 0");
+        return;
+    }
+
+    const producto = {
+        id: generarId(),
+        nombre: nombre,
+        precio: parseFloat(precio)
+    };
+
+    carrito.push(producto);
+    guardarCarrito();
+    renderizarCarrito();
+    nombre.value = "";
+    precio.value = "";
 }
 
 /**
  * Elimina un producto del carrito por su ID
- * @param {number} id - ID del producto a eliminar
+ * param {number} id - ID del producto a eliminar
  */
 function eliminarProducto(id) {
     // TO-DO: Implementar
@@ -80,6 +119,12 @@ function eliminarProducto(id) {
     // 2. Si confirma, filtrar el array 'carrito' eliminando el producto con ese ID
     // 3. Llamar a guardarCarrito()
     // 4. Llamar a renderizarCarrito()
+    const confirmar = confirm("Seguro quieres eliminar el producto?");
+    if(confirmar){
+        carrito = carrito.filter(p => p.id !== id);
+        guardarCarrito();
+        renderizarCarrito();
+    }
 }
 
 
@@ -101,6 +146,25 @@ function renderizarCarrito() {
     //    - Botón "Eliminar" con data-id
     // 5. Añadir event listener al botón eliminar
     // 6. Llamar a calcularTotal()
+    lista.innerHTML = "";
+
+    if(carrito.length === 0){
+        lista.innerHTML = '<li>El carrito esta vacio</li>';
+        calcularTotal();
+        return;
+    }
+    if (carrito.forEach(producto => {
+        const item = document.createElement("li");
+        item.textContent = `${producto.nombre} --> ${producto.precio.toFixed(2)}€`;
+
+        const btnEliminar = document.createElement ("button");
+        btnEliminar.textContent = "Eliminar";
+        btnEliminar.onclick = () => eliminarProducto(producto.id);
+
+        item.appendChild(btnEliminar);
+        lista.appendChild(item);
+    }));
+    calcularTotal();
 }
 
 /**
@@ -111,6 +175,8 @@ function calcularTotal() {
     // 1. Usar reduce() para sumar todos los precios del carrito
     // 2. Mostrar el total en el elemento #total
     // 3. Formato sugerido: "Total: XX.XX €"
+    const total = carrito.reduce((acc, producto) => acc + producto.precio, 0);
+    totalElemento.textContent = `total: ${total.toFixed(2)} €`;
 }
 
 
@@ -119,11 +185,21 @@ function calcularTotal() {
 // ==========================================
 
 // TO-DO: Añadir event listener al botón "Añadir"
-// btnAgregar.addEventListener('click', () => {
-//     agregarProducto(inputNombre.value, inputPrecio.value);
-// });
+btnAgregar.addEventListener('click', () => {
+    agregarProducto(nombre.value, precio.value);
+});
 
 // TO-DO: Permitir añadir con Enter en los inputs
+nombre.addEventListener("keypress", function(event) {
+    if (event.key === "Enter") {
+        agregarProducto(nombre.value, precio.value);
+    }
+});
+precio.addEventListener("keypress", function(event) {
+    if (event.key === "Enter") {
+        agregarProducto(nombre.value, precio.value);
+    }
+});
 
 
 // ==========================================
@@ -138,11 +214,14 @@ function inicializar() {
     
     // TO-DO: Implementar
     // 1. Cargar carrito desde localStorage
+    cargarCarrito();
     // 2. Renderizar el carrito
     // 3. Dar foco al input de nombre
+    nombre.focus();
     
     console.log('✅ Aplicación inicializada');
 }
 
 // TO-DO: Llamar a inicializar() cuando cargue la página
 // inicializar();
+window.addEventListener("load", inicializar);
